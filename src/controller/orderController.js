@@ -4,7 +4,7 @@ const productModel = require("../model/productModel")
 const validator = require("../validator/validation")
 const cartModel = require('../model/cartModel')
 
-/******************************** create order ***************************/
+/******************************** Create Order ***************************/
 
 const createOrder = async function(req,res) {
     try{
@@ -87,6 +87,8 @@ const createOrder = async function(req,res) {
         res.status(500).send({ message: "Error", error: error.message })
     }
 }
+
+/******************************** Update Order **********************************/
 
 const updateOrder =async function(req,res) {
     try{

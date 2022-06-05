@@ -97,9 +97,9 @@ let createUser = async (req,res) =>{
         res.status(500).send({status:false, message:error.message})
     }
 }
-/********************************************************************************************************************************************** */
 
 
+/****************************************** Login User **************************************************/
 const loginUser = async function (req, res) {
   try{
     let data = req.body
@@ -113,7 +113,7 @@ const loginUser = async function (req, res) {
 
    // checking for password
    if (!data.password) return res.status(400).send({ status: false, message: "please enter password"})
-   if(data.password.trim().length<8 || data.password.trim().length>15) {return res.status(400).send({ status: false, message: 'Password should be of minimum 8 characters & maximum 15 characters' })}
+   if(!validator.validPassword(data.password)) {return res.status(400).send({ status: false, message: 'Password should be of minimum 8 characters & maximum 15 characters' })}
 
    let findUser = await userModel.findOne({email: data.email})
 
@@ -139,6 +139,7 @@ const loginUser = async function (req, res) {
   }
 }
 
+/****************************************** User Details **************************************************/
 const getDetails = async function (req, res) {
   try {
       let userId = req.params.userId;
@@ -159,8 +160,8 @@ const getDetails = async function (req, res) {
       res.status(500).send({ status: false, message: err });
   }
 }
-/***************************************************update user details******************************************************************************* */
 
+/****************************update user details************************************************* */
 const updateUser = async function(req, res) {
 
   const data = req.body;
@@ -183,7 +184,7 @@ const updateUser = async function(req, res) {
             return res.status(404).send({ status: false, message: 'user not found.' });
         }
         if (userIdFromToken != userIdFromParams) {
-            return res.status(403).send({status: false,message: "Unauthorized access."});//check
+            return res.status(403).send({status: false,message: "Unauthorized access."});
         }
         if (Object.keys(data) == 0) {
             return res.status(400).send({status: false,message: "please provide data to update"})
@@ -262,7 +263,7 @@ const updateUser = async function(req, res) {
           
           if (!(validator.isValid(address.shipping.pincode))) { return res.status(400).send({ status: false, message: " pincode address is required" }) }
 
-/*           if (!(validator.isValid(address.shipping.pincode))) { return res.status(400).send({status:false, message:"Please provide pincode in 6 digit number"})} */
+         /*if (!(validator.isValid(address.shipping.pincode))) { return res.status(400).send({status:false, message:"Please provide pincode in 6 digit number"})} */
           updatedData["address.shipping.pincode"] = address.shipping.pincode
       
 

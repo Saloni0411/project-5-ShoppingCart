@@ -2,8 +2,6 @@ const productModel = require("../model/productModel")
 const aws = require("../aws/aws")
 const validator = require("../validator/validation")
 
-
-
 const createProduct = async function (req, res) {
       try {
           let data = req.body
@@ -11,7 +9,7 @@ const createProduct = async function (req, res) {
         
         // checking data comes from user body
         if(Object.keys(data).length ==0){return res.status(400).send({status:false, message: "please input some data"})}
-          const { title, description, price, currencyId, currencyFormat, availableSizes, installments} = data
+          let { title, description, price, currencyId, currencyFormat, availableSizes, installments} = data
         
         // checking for title
         if(!(validator.isValid(title))){
@@ -42,15 +40,15 @@ const createProduct = async function (req, res) {
             return res.status(400).send({status:false, message: "currencyId required"})
           }
 
-        if(!(validator.isValid(currencyFormat))) {
-          return res.status(400).send({status:false, message: "currency format required"})
-         }
-        
-
-        if(currencyId != "INR"){ 
+          if(currencyId != "INR"){ 
             return res.status(400).send({status:false, message: "only indian currencyId INR accepted"})
          }
 
+         //checking for currencyFormat
+        if(!(validator.isValid(currencyFormat))) {
+          return res.status(400).send({status:false, message: "currency format required"})
+         }
+       
         if(currencyFormat != "₹"){
             return res.status(400).send({status:false, message: "only indian currency ₹ accepted "})
          }
@@ -66,38 +64,25 @@ const createProduct = async function (req, res) {
            //checking for available Sizes of the products
         if(!(validator.isValid(availableSizes))) {
             return res.status(400).send({status:false, message: "availableSizes required"})
-          }
+          }   
 
-/*         if(validator.isValid(availableSizes) && validator.isValidString(availableSizes))  return res.status(400).send({ status: false, message: "Enter at least one available size" }); */
+         if((validator.isValid(availableSizes))){
+            let arr = ["S", "XS","M","X", "L","XXL", "XL"]
+            availableSizes = availableSizes.split(/[",\[\]]/).filter(x=>x.trim())
+            if(availableSizes.some(x => !arr.includes(x.trim())))
+            return res.status(400).send({ status: false, message: "Size can only be from: S, XS, M, X, L, XXL, XL" })
+        }
 
-        /*let sizeArray = availableSizes.split(",").map(x => x.trim())
-        for (let i = 0; i < sizeArray.length; i++) {
-            if (!(["S", "XS", "M", "X", "L", "XXL", "XL"].includes(sizeArray[i]))) {
-                return res.status(400).send({ status: false, message: `Available Sizes must be among ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
-            }
-        } */
-
-
-        data.availableSizes =  JSON.parse(availableSizes);
-
-        for(let i = 0;  i < data.availableSizes.length; i++){
-             if(!validator.isValidSize(data.availableSizes[i])) {
-        return res.status(400).send({ status: false, message: "Sizes should one of these - 'S', 'XS', 'M', 'X', 'L', 'XXL' and 'XL'" })
-             }
-         }         
+         //checking for Installments
          if(!(validator.isValid(installments))) {
             return res.status(400).send({status:false, message: "Invalid request parameters Please enter number"})
          }
 
          if (installments) {
             if (!(validator.isValidInstalments(installments))) {
-                return res.status(400).send({ status: false, message: "Invalid installments" })
+                return res.status(400).send({ status: false, message: "Installment can only be a Number." })
             }
         }
-    
-        if(data.isDeleted === true) {
-          return res.status(400).send({status:false, message:"Bad Request"})//not working 
-         }
   
          const created = await productModel.create(data)
          return res.status(201).send({ status: true, message:"Success",data: created })
@@ -105,6 +90,7 @@ const createProduct = async function (req, res) {
       catch (err) {
           return res.status(500).send({ status: false, message: err.message })
       }
+
   }
 
   const getProducts = async (req, res) => {
@@ -125,17 +111,14 @@ const createProduct = async function (req, res) {
         }
     
         if (priceGreaterThan && priceLessThan) {
-            console.log("both given");
             filterQuery['price'] = { $gte: priceGreaterThan, $lte: priceLessThan }
         }
     
         if (priceGreaterThan) {
-            console.log("only 1 given");
             filterQuery['price'] = { $gte: priceGreaterThan }
         }
     
         if (priceLessThan) {
-            console.log("only 2 given");
             filterQuery['price'] = { $lte: priceLessThan }
         }
 
@@ -181,17 +164,16 @@ const getProductbyId = async function (req, res) {
         return res.status(404).send({ status: false, message: 'product does not exists' }) 
     }
     catch(error){
-        return res.status(500).json({ status: false, message: error.message });
+        return res.status(500).send({ status: false, message: error.message });
     }
 }
 
 const updateProduct = async function (req, res) {
-
     try {
         let data = req.body;
         const productId = req.params.productId
 
-        const { title, description, price, currencyId, currencyFormat, installments,availableSizes, isFreeShipping } = data
+        let { title, description, price, currencyId, currencyFormat, installments,availableSizes, isFreeShipping } = data
 
         const dataObject = {};
 
@@ -264,14 +246,11 @@ const updateProduct = async function (req, res) {
      if(availableSizes){ 
         if(validator.isValid(availableSizes) && validator.isValidString(availableSizes))  return res.status(400).send({ status: false, message: "Enter at least one available size" });
 
-        data.availableSizes =  JSON.parse(availableSizes);
-
-        for(let i = 0;  i < data.availableSizes.length; i++){
-            if(!validator.isValidSize(data.availableSizes[i])) {
-              return res.status(400).send({ status: false, message: "Sizes should one of these - 'S', 'XS', 'M', 'X', 'L', 'XXL' and 'XL'" })
-            }
-            dataObject["availableSizes"]=data.availableSizes
-        } 
+            let arr = ["S", "XS","M","X", "L","XXL", "XL"]
+            availableSizes = availableSizes.split(/[",\[\]]/).filter(x=>x.trim())
+            if(availableSizes.some(x => !arr.includes(x.trim())))
+            return res.status(400).send({ status: false, message: "Size can only be from: S, XS, M, X, L, XXL, XL" })
+            dataObject["availableSizes"]= availableSizes 
     }   
         
         if (installments) {
@@ -311,12 +290,12 @@ const deleteProduct = async function (req, res) {
         if (findProduct.isDeleted == true){
             return res.status(400).send({status:false, message:"product already deleted."})
         }
-        const deletedDetails = await productModel.findOneAndUpdate({ _id: productId },{ $set: { isDeleted: true, deletedAt: new Date() } }, {new:true})
+        await productModel.findOneAndUpdate({ _id: productId },{ $set: { isDeleted: true, deletedAt: new Date() } }, {new:true})
 
         return res.status(200).send({ status: true, message: 'Product deleted successfully.' })
     }
     catch(error){
-        return res.status(500).json({ status: false, message: error.message });
+        return res.status(500).send({ status: false, message: error.message });
     }
 }
 
